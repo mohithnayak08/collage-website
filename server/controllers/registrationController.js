@@ -1,6 +1,7 @@
 const Registration = require('../models/Registration');
 const Event = require('../models/Event');
 const ExcelJS = require('exceljs');
+const { Op } = require('sequelize');
 
 // @desc    Register for an event with payment screenshot
 // @route   POST /api/registrations
@@ -13,15 +14,17 @@ const registerForEvent = async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const event = await Event.findById(eventId);
+    const event = await Event.findByPk(eventId);
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
 
     // Check if duplicate registration
     const existingRegistration = await Registration.findOne({
-      event: eventId,
-      $or: [{ email: email.toLowerCase() }, { rollNumber: rollNumber.trim() }],
+      where: {
+        eventId,
+        [Op.or]: [{ email: email.toLowerCase() }, { rollNumber: rollNumber.trim() }],
+      },
     });
 
     if (existingRegistration) {
@@ -37,11 +40,11 @@ const registerForEvent = async (req, res) => {
     const paymentScreenshotUrl = `/uploads/${req.file.filename}`;
 
     const registration = await Registration.create({
-      event: eventId,
+      eventId,
       fullName,
-      email,
+      email: email.toLowerCase(),
       phone,
-      rollNumber,
+      rollNumber: rollNumber.trim(),
       paymentScreenshotUrl,
     });
 
@@ -60,14 +63,22 @@ const registerForEvent = async (req, res) => {
 const getRegistrations = async (req, res) => {
   try {
     const { eventId, status } = req.query;
-    const filter = {};
+    const where = {};
 
-    if (eventId) filter.event = eventId;
-    if (status) filter.paymentStatus = status;
+    if (eventId) where.eventId = eventId;
+    if (status && status !== 'all') where.paymentStatus = status;
 
-    const registrations = await Registration.find(filter)
-      .populate('event', 'title date venue fee')
-      .sort({ createdAt: -1 });
+    const registrations = await Registration.findAll({
+      where,
+      include: [
+        {
+          model: Event,
+          as: 'event',
+          attributes: ['title', 'date', 'venue', 'fee'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
 
     res.json(registrations);
   } catch (error) {
@@ -85,7 +96,7 @@ const updateRegistrationStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid payment status' });
     }
 
-    const registration = await Registration.findById(req.params.id);
+    const registration = await Registration.findByPk(req.params.id);
     if (!registration) {
       return res.status(404).json({ message: 'Registration not found' });
     }
@@ -106,18 +117,19 @@ const exportRegistrations = async (req, res) => {
   try {
     const { eventId } = req.params;
 
-    const event = await Event.findById(eventId);
+    const event = await Event.findByPk(eventId);
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    const registrations = await Registration.find({ event: eventId }).sort({ createdAt: 1 });
+    const registrations = await Registration.findAll({
+      where: { eventId },
+      order: [['createdAt', 'ASC']],
+    });
 
-    // Create a new Excel workbook and worksheet
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Registrations');
 
-    // Define columns
     worksheet.columns = [
       { header: 'S.No', key: 'sno', width: 8 },
       { header: 'Full Name', key: 'fullName', width: 25 },
@@ -129,7 +141,6 @@ const exportRegistrations = async (req, res) => {
       { header: 'Registration Date', key: 'registeredAt', width: 22 },
     ];
 
-    // Style the header row
     worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     worksheet.getRow(1).fill = {
       type: 'pattern',
@@ -137,7 +148,6 @@ const exportRegistrations = async (req, res) => {
       fgColor: { argb: 'FF1F4E79' },
     };
 
-    // Populate rows
     registrations.forEach((reg, index) => {
       worksheet.addRow({
         sno: index + 1,

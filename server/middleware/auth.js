@@ -10,9 +10,15 @@ const protect = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key_change_in_production');
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || 'college_club_jwt_secret_neon_2026'
+      );
 
-      req.admin = await Admin.findById(decoded.id).select('-password');
+      req.admin = await Admin.findByPk(decoded.id, {
+        attributes: { exclude: ['password'] },
+      });
+
       if (!req.admin) {
         return res.status(401).json({ message: 'Admin not found, unauthorized' });
       }

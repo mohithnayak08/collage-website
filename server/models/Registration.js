@@ -1,47 +1,66 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
+const Event = require('./Event');
 
-const RegistrationSchema = new mongoose.Schema(
+const Registration = sequelize.define(
+  'Registration',
   {
-    event: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Event',
-      required: [true, 'Event ID is required'],
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    eventId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: Event,
+        key: 'id',
+      },
     },
     fullName: {
-      type: String,
-      required: [true, 'Full name is required'],
-      trim: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     email: {
-      type: String,
-      required: [true, 'Email is required'],
-      trim: true,
-      lowercase: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address'],
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        isEmail: true,
+      },
     },
     phone: {
-      type: String,
-      required: [true, 'Phone number is required'],
-      trim: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     rollNumber: {
-      type: String,
-      required: [true, 'College ID / Roll Number is required'],
-      trim: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     paymentScreenshotUrl: {
-      type: String,
-      required: [true, 'Payment screenshot is required'],
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     paymentStatus: {
-      type: String,
-      enum: ['pending', 'verified', 'rejected'],
-      default: 'pending',
+      type: DataTypes.ENUM('pending', 'verified', 'rejected'),
+      defaultValue: 'pending',
     },
   },
   {
     timestamps: true,
+    tableName: 'registrations',
   }
 );
 
-module.exports = mongoose.model('Registration', RegistrationSchema);
+// Association setup
+Registration.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });
+Event.hasMany(Registration, { foreignKey: 'eventId', as: 'registrations' });
+
+// Compatibility getter so frontend `_id` continues to work cleanly
+Registration.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = values.id;
+  return values;
+};
+
+module.exports = Registration;

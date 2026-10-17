@@ -1,6 +1,5 @@
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const connectDB = require('./config/db');
+const { connectDB } = require('./config/db');
 const Admin = require('./models/Admin');
 const Event = require('./models/Event');
 
@@ -10,25 +9,25 @@ const seedData = async () => {
   try {
     await connectDB();
 
-    console.log('Seeding initial data...');
+    console.log('Checking NeonDB records for seeding...');
 
     // 1. Seed Default Admin if none exists
-    const adminExists = await Admin.findOne({ username: 'admin' });
+    const adminExists = await Admin.findOne({ where: { username: 'admin' } });
     if (!adminExists) {
       await Admin.create({
         username: 'admin',
         email: 'admin@collegeclub.edu',
         password: 'adminpassword123',
       });
-      console.log('Admin account created -> User: admin | Pass: adminpassword123');
+      console.log('Default Admin created -> User: admin | Pass: adminpassword123');
     } else {
-      console.log('Admin user already exists.');
+      console.log('Admin user already exists in NeonDB.');
     }
 
     // 2. Seed Sample Events if none exists
-    const eventsCount = await Event.countDocuments();
+    const eventsCount = await Event.count();
     if (eventsCount === 0) {
-      await Event.create([
+      await Event.bulkCreate([
         {
           title: 'HackWeb 2026: 24h Hackathon',
           description: 'A 24-hour rapid product design & full-stack development marathon with prizes worth ₹50,000.',
@@ -48,12 +47,12 @@ const seedData = async () => {
           upiId: '',
         },
       ]);
-      console.log('Sample events seeded successfully.');
+      console.log('Sample events seeded successfully into NeonDB.');
     } else {
-      console.log('Events already present in database.');
+      console.log('Events already present in NeonDB.');
     }
 
-    console.log('Seeding process completed!');
+    console.log('NeonDB seeding completed successfully!');
     process.exit(0);
   } catch (err) {
     console.error('Seeding error:', err.message);

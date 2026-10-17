@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const connectDB = require('./config/db');
+const { connectDB } = require('./config/db');
 
 // Route imports
 const authRoutes = require('./routes/authRoutes');
@@ -12,7 +12,7 @@ const registrationRoutes = require('./routes/registrationRoutes');
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB
+// Connect and sync database schemas with NeonDB
 connectDB();
 
 const app = express();
@@ -37,7 +37,7 @@ app.use('/api/registrations', registrationRoutes);
 
 // Root health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'College Club Event API is running' });
+  res.json({ status: 'ok', message: 'College Club Event API running on NeonDB (PostgreSQL)' });
 });
 
 // Error handling middleware

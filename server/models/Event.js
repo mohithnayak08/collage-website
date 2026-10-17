@@ -1,53 +1,62 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const EventSchema = new mongoose.Schema(
+const Event = sequelize.define(
+  'Event',
   {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
     title: {
-      type: String,
-      required: [true, 'Please provide an event title'],
-      trim: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     description: {
-      type: String,
-      required: [true, 'Please provide an event description'],
-      trim: true,
+      type: DataTypes.TEXT,
+      allowNull: false,
     },
     date: {
-      type: Date,
-      required: [true, 'Please provide an event date'],
+      type: DataTypes.DATE,
+      allowNull: false,
     },
     time: {
-      type: String,
-      required: [true, 'Please provide event time'],
-      trim: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     venue: {
-      type: String,
-      required: [true, 'Please provide a venue'],
-      trim: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     fee: {
-      type: Number,
-      required: [true, 'Please provide a registration fee (0 if free)'],
-      default: 0,
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
     },
     upiId: {
-      type: String,
-      trim: true,
-      default: '',
+      type: DataTypes.STRING,
+      defaultValue: '',
     },
     qrCodeUrl: {
-      type: String,
-      default: '',
+      type: DataTypes.STRING,
+      defaultValue: '',
     },
     isActive: {
-      type: Boolean,
-      default: true,
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
     },
   },
   {
     timestamps: true,
+    tableName: 'events',
   }
 );
 
-module.exports = mongoose.model('Event', EventSchema);
+// Compatibility getter so frontend `_id` continues to work cleanly
+Event.prototype.toJSON = function () {
+  const values = Object.assign({}, this.get());
+  values._id = values.id;
+  return values;
+};
+
+module.exports = Event;
