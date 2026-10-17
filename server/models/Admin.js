@@ -1,6 +1,8 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/db');
+const db = require('../config/db');
 const bcrypt = require('bcryptjs');
+
+const sequelize = db.sequelize || db.default;
 
 const Admin = sequelize.define(
   'Admin',
