@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
 });
 
 // Interceptor to attach admin JWT token if present
@@ -36,8 +36,15 @@ export const updateRegistrationStatus = (id, status) =>
   API.patch(`/registrations/${id}/status`, { paymentStatus: status });
 
 export const getExportUrl = (eventId) => {
-  const base = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const base = import.meta.env.VITE_API_URL || '/api';
   return `${base}/registrations/export/${eventId}`;
+};
+
+export const getAssetUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  const base = import.meta.env.VITE_SERVER_URL || '';
+  return `${base}${path}`;
 };
 
 export default API;

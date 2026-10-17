@@ -6,6 +6,8 @@ import {
   updateRegistrationStatus,
   createEvent,
   deleteEvent,
+  getExportUrl,
+  getAssetUrl,
 } from '../services/api';
 import { Download, Plus, Trash2, CheckCircle, XCircle, Clock, ExternalLink, ShieldAlert, Sparkles, Filter } from 'lucide-react';
 
@@ -117,7 +119,7 @@ const AdminDashboard = () => {
 
   const handleExportExcel = () => {
     if (!selectedEventId) return;
-    const exportUrl = `http://localhost:5000/api/registrations/export/${selectedEventId}`;
+    const exportUrl = getExportUrl(selectedEventId);
 
     fetch(exportUrl, {
       headers: {
@@ -297,7 +299,7 @@ const AdminDashboard = () => {
                     <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#c7d2fe' }}>{reg.rollNumber}</td>
                     <td style={{ padding: '1rem 1.25rem' }}>
                       <a
-                        href={`http://localhost:5000${reg.paymentScreenshotUrl}`}
+                        href={getAssetUrl(reg.paymentScreenshotUrl)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="btn btn-outline btn-sm"
