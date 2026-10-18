@@ -5,7 +5,7 @@ dotenv.config();
 
 const connectionString = process.env.DATABASE_URL;
 
-let sequelize = null;
+let sequelize;
 
 if (connectionString) {
   sequelize = new Sequelize(connectionString, {
@@ -25,15 +25,21 @@ if (connectionString) {
     },
   });
 } else {
-  console.warn('WARNING: DATABASE_URL is not set in environment variables! Database operations will fail.');
+  console.warn(
+    'WARNING: DATABASE_URL is not set in environment variables! Using uninitialized placeholder. Ensure DATABASE_URL is added to Vercel Environment Variables.'
+  );
+  sequelize = new Sequelize('postgres://localhost:5432/placeholder', {
+    dialect: 'postgres',
+    logging: false,
+  });
 }
 
 let isConnected = false;
 
 const connectDB = async () => {
   if (isConnected) return;
-  if (!sequelize) {
-    console.warn('DATABASE_URL is missing. Skipping database connection.');
+  if (!connectionString) {
+    console.warn('DATABASE_URL is missing. Skipping database connection. Check Vercel Environment Variables.');
     return;
   }
   try {
