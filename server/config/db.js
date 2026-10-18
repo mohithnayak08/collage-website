@@ -5,35 +5,43 @@ dotenv.config();
 
 const connectionString = process.env.DATABASE_URL;
 
-if (!connectionString) {
-  console.error('DATABASE_URL is not set in environment variables');
-  process.exit(1);
+let sequelize = null;
+
+if (connectionString) {
+  sequelize = new Sequelize(connectionString, {
+    dialect: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
+    logging: false,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
+  });
+} else {
+  console.warn('WARNING: DATABASE_URL is not set in environment variables! Database operations will fail.');
 }
 
-const sequelize = new Sequelize(connectionString, {
-  dialect: 'postgres',
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
-  },
-  logging: false, // Set to console.log if you want SQL query debugging
-  pool: {
-    max: 10,
-    min: 0,
-    acquire: 30000,
-    idle: 10000,
-  },
-});
+let isConnected = false;
 
 const connectDB = async () => {
+  if (isConnected) return;
+  if (!sequelize) {
+    console.warn('DATABASE_URL is missing. Skipping database connection.');
+    return;
+  }
   try {
     await sequelize.authenticate();
+    isConnected = true;
     console.log('NeonDB (PostgreSQL) connected successfully.');
-    // Synchronize schemas with the database
-    await sequelize.sync({ alter: true });
-    console.log('Database tables synchronized.');
+    await sequelize.sync({ alter: false });
+    console.log('Database tables verified.');
   } catch (error) {
     console.error('Unable to connect to NeonDB:', error.message);
   }

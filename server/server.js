@@ -18,10 +18,18 @@ connectDB();
 
 const app = express();
 
+// Ensure DB is connected for serverless invocations
+app.use(async (req, res, next) => {
+  if (connectDB) {
+    await connectDB();
+  }
+  next();
+});
+
 // Middlewares
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: process.env.CLIENT_URL || '*',
     credentials: true,
   })
 );
@@ -36,10 +44,18 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/registrations', registrationRoutes);
 
-// Root health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'College Club Event API running on NeonDB (PostgreSQL)' });
-});
+// Root health check endpoint (responds to both /api/health and /health)
+const healthHandler = (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'College Club Event API running on NeonDB (PostgreSQL)',
+    databaseUrlConfigured: Boolean(process.env.DATABASE_URL),
+    env: process.env.NODE_ENV || 'production',
+  });
+};
+
+app.get('/api/health', healthHandler);
+app.get('/health', healthHandler);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
